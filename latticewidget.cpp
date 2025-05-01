@@ -30,6 +30,9 @@ LatticeWidget::LatticeWidget(QWidget *parent)
     }
     setFixedSize(x * cellSize, y * cellSize);
 
+    if(SimulationRunning) return;
+       timer = nullptr;
+    
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &LatticeWidget::Evolucionar);
     timer -> start(500);
@@ -44,6 +47,12 @@ LatticeWidget::~LatticeWidget()
     }
     delete[] matriz;
     delete[] ciclos;
+}//fin del destructor
+
+void LatticeWidget::setSimulationRunning(bool running)
+{
+    this -> SimulationRunning = running;
+    update();
 }
 
 void LatticeWidget::initializeGL()
@@ -67,7 +76,8 @@ void LatticeWidget::paintGL()
    // float r,g,b;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLineWidth(5.0f);
-
+//if(!SimulationRunning) return; //aplicamos una bandera si deseamos que no se dibuje nada, caso contrario se aplica sobre la variable timer
+    
     for(int i = 0; i< x; ++i)
     {
         for(int j = 0; j < y; ++j)
