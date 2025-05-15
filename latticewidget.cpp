@@ -8,6 +8,69 @@
 LatticeWidget::LatticeWidget(QWidget *parent)
     : QOpenGLWidget {parent}
 {
+
+
+    x = 50;
+    y = 50;
+
+    matriz = nullptr; //new int*[x];
+    ciclos = nullptr; //new int*[x];
+
+    timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, &LatticeWidget::Evolucionar);
+//    timer -> start(500);
+
+}//fin del constructor
+
+LatticeWidget::~LatticeWidget()
+{
+    if(matriz) //verificar si matriz es un valor nulo
+    {
+        for(int i = 0; i < x; i++)
+        {
+            delete[] matriz[i];
+        }
+        delete[] matriz;
+    }
+    if(ciclos) //verificar si ciclos es un valor nulo
+    {
+        for(int i = 0; i < x; i++)
+        {
+            delete[] ciclos[i];
+        }
+        delete[] ciclos;
+    }
+}//fin del destructor
+
+void LatticeWidget::setTiempoInfeccion(int t) //para la entrada del tiempo de infeccion
+{
+    tiempoInfeccion = t;
+}
+
+void LatticeWidget::setHostInfectados(int h) //para la entrada de host infectados
+{
+    infectadosIniciales = h;
+}
+
+void LatticeWidget::CrearLattice() //implementacion del metodo CrearLattice
+{
+    if(MatrizGenerada)
+    {
+        qDebug() << "la matriz ya fue generada";
+        return;
+    }
+    if(matriz) //verificar si matriz no es un valor nulo (nullptr)
+    {
+
+        for(int i = 0; i < x; ++i) delete[] matriz[i];
+        delete[] matriz;
+    }
+
+    if(ciclos) //verificar si ciclos no es un valor nulo (nullptr)
+    {
+        for(int i = 0; i < x; ++i) delete[] ciclos[i];
+        delete[] ciclos;
+    }
     x = 50;
     y = 50;
 
@@ -21,29 +84,30 @@ LatticeWidget::LatticeWidget(QWidget *parent)
     }
 
     std::srand(std::time(nullptr));
-    for(int i = 0; i < x; i++)
+
+    for(int i = 0; i< x; i++)
     {
         for(int j = 0; j < y; j++)
         {
             matriz[i][j] = std::rand() % 2;
         }
     }
-    setFixedSize(x * cellSize, y * cellSize);
 
-    timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &LatticeWidget::Evolucionar);
-    timer -> start(500);
+    setFixedSize(x*cellSize, y*cellSize);
+    update(); //llamada al metodo paintGL
+    MatrizGenerada = true;
+}//fin de la implementacion CrearLattice
+
+void LatticeWidget::ReiniciarLattice() //verificamos que la matriz (Lattice) ya fue creada
+{
+    MatrizGenerada = false;
+    CrearLattice();
 }
 
-LatticeWidget::~LatticeWidget()
+void LatticeWidget::setModoDibujo(ModoDibujo NuevoModo)
 {
-    for(int i = 0; i < x; i++)
-    {
-        delete[] matriz[i];
-        delete[] ciclos[i];
-    }
-    delete[] matriz;
-    delete[] ciclos;
+    modo = NuevoModo;
+    update(); //actualizamos la lattice
 }
 
 void LatticeWidget::initializeGL()
@@ -59,12 +123,13 @@ void LatticeWidget::initializeGL()
     glEnable(GL_COLOR_MATERIAL);
 }//end initializeGL
 
-void LatticeWidget::paintGL()
+void LatticeWidget::paintGL() //construccion de la lattice
 {
+    if(!matriz) return; //si !matriz = nullptr
+
     QPainter painter(this);
-    QColor ColorVivo("#6630c9"); //Color purpura
+    QColor ColorVivo = (modo == Lattice) ? QColor("#2f92de"): QColor("#6630c9");
     QColor ColorMuerto("#2E2E2E"); //Color gris de fondo (para las celulas que estan muertas)
-   // float r,g,b;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLineWidth(5.0f);
 
@@ -100,12 +165,6 @@ int LatticeWidget::ContarVecinos(int i, int j)
 
 void LatticeWidget::Evolucionar()
 {
-    if(CicloActual >= maxCiclos)
-    {
-        timer -> stop();
-        return;
-    }
-
     for(int i = 0; i < x; i++)
     {
         for(int j = 0; j < y; j++)
@@ -135,7 +194,7 @@ void LatticeWidget::Evolucionar()
 
     CicloActual++;
     update(); //redibuja la matriz
-}//end Evolucionar
+}//fin fel metodo Evolucionar
 
 void LatticeWidget::resizeGL(int w, int h)
 {
@@ -144,7 +203,7 @@ void LatticeWidget::resizeGL(int w, int h)
     glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-}//end resizeGL
+}//fin del metodo resizeGL
 
 void LatticeWidget::qColorToRGB(const QColor &C, float &r, float &g, float &b) const
 {
@@ -154,9 +213,10 @@ void LatticeWidget::qColorToRGB(const QColor &C, float &r, float &g, float &b) c
     r = normaliza_0_1(red, 1.0f, 255.0f);
     g = normaliza_0_1(green, 1.0f, 255.0f);
     b = normaliza_0_1(blue, 1.0f, 255.0f);
-}//end qColorToRGB
+}//fin del metodo qColorToRGB
+
 
 float LatticeWidget::normaliza_0_1(float val, float min, float max) const
 {
     return (val - min) / (max-min);
-}
+}//fin del metodo normaliza_0_1
